@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
+const _pick = require('lodash/pick');
+const _isBoolean= require('lodash/isBoolean');
 
 const { mongoose } = require('./db/mongoose');
 const { User } = require('./models/user');
@@ -35,6 +37,38 @@ app.get('/todos/:id', (req, res) => {
     })
     .catch(err => res.status(400).send(err));
 });
+
+app.delete('/todos/:id', (req, res) => {
+    const id = req.params.id;
+    if(!ObjectID.isValid(id)) return res.status(404).send();
+    Todo.findByIdAndRemove(id)
+    .then(todo => {
+        if(!todo) return res.status(404).send();
+        res.send({ todo })
+    })
+    .catch(err => res.send(400).send(err));
+});
+
+app.patch('/todos/:id', (req, res) => {
+    const id = req.params.id;
+    const body = _pick(req.body, ['text', 'completed']);
+
+    if(_isBoolean(body.completed) && body.completed) {
+        body.completedAt = new Date().getTime();
+    } else {
+        body.completed = false;
+        body.completedAt = null;
+    }
+
+    Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+    .then(todo => {
+        if(!todo) return res.status(404).send();
+        res.send({ todo });
+    })
+    .catch(err => res.status(400).send(err));
+});
+
+
 
 app.listen(port, () => {
     console.log(`Server started at port ${port}`);
