@@ -12,6 +12,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
+/**
+ * Todo api calls
+ */
+
 app.post('/todos', (req, res) => {
     new Todo({
         text: req.body.text,
@@ -65,6 +69,20 @@ app.patch('/todos/:id', (req, res) => {
         if(!todo) return res.status(404).send();
         res.send({ todo });
     })
+    .catch(err => res.status(400).send(err));
+});
+
+/**
+ * User api calls
+ */
+
+app.post('/users', (req, res) => {
+    const body = _pick(req.body, ['email', 'password']);
+    const user = new User(body);
+    
+    user.save()
+    .then(user => user.generateAuthToken())
+    .then(token => res.header('x-auth', token).send(user))
     .catch(err => res.status(400).send(err));
 });
 
